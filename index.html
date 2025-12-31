@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador da Mônada</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script type="importmap">
     {
       "imports": {
@@ -23,22 +21,14 @@
     <div id="root"></div>
 
     <script type="module">
-        import React, { useState, useMemo } from 'react';
+        import React, { useState, useMemo, createElement as e } from 'react';
         import { createRoot } from 'react-dom/client';
         import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-        import { Activity, TrendingUp, Shield } from 'lucide-react';
-
-        const Card = ({ children, className = "" }) => (
-            <div className={`bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden ${className}`}>
-                {children}
-            </div>
-        );
 
         const App = () => {
             const [stockPrice, setStockPrice] = useState(22.00);
             const [weeksRolled, setWeeksRolled] = useState(0);
             
-            // Strike fixos baseados no vídeo do Mestre
             const longPutStrike = 22.00;
             const shortCallStrike = 21.50;
             const longCallStrike = 23.00;
@@ -55,90 +45,56 @@
                     const longCallValue = Math.max(price - longCallStrike, 0);
                     const shortCallValue = 2 * Math.max(price - shortCallStrike, 0);
                     const pnl = (longPutValue + longCallValue - shortCallValue) - totalCost;
-
-                    data.push({
-                        price: price,
-                        pnl: parseFloat(pnl.toFixed(2))
-                    });
+                    data.push({ price, pnl: parseFloat(pnl.toFixed(2)) });
                 }
                 return data;
             }, [weeksRolled]);
 
             const currentPnL = useMemo(() => {
                 const totalCost = initialCost - (rollCredit * weeksRolled);
-                const longPutValue = Math.max(longPutStrike - stockPrice, 0);
-                const longCallValue = Math.max(stockPrice - longCallStrike, 0);
-                const shortCallValue = 2 * Math.max(stockPrice - shortCallStrike, 0);
-                return (longPutValue + longCallValue - shortCallValue - totalCost).toFixed(2);
+                const lp = Math.max(longPutStrike - stockPrice, 0);
+                const lc = Math.max(stockPrice - longCallStrike, 0);
+                const sc = 2 * Math.max(stockPrice - shortCallStrike, 0);
+                return (lp + lc - sc - totalCost).toFixed(2);
             }, [stockPrice, weeksRolled]);
 
-            return (
-                <div className="min-h-screen p-4 md:p-8 font-sans">
-                    <div className="max-w-5xl mx-auto">
-                        <header className="mb-8 text-center">
-                            <h1 className="text-3xl font-extrabold text-slate-900">Simulador da Mônada</h1>
-                            <p className="text-slate-500">Alimentador Over Strip Long Put Long Call</p>
-                        </header>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="space-y-6">
-                                <Card className="p-6">
-                                    <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
-                                        <Activity className="text-blue-600" size={20} /> Parâmetros
-                                    </h2>
-                                    <div className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Preço da Ação: R$ {stockPrice.toFixed(2)}</label>
-                                            <input type="range" min="15" max="30" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Rolagens (Semanas): {weeksRolled}</label>
-                                            <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600" />
-                                        </div>
-                                    </div>
-                                </Card>
-
-                                <Card className="p-6 bg-slate-900 text-white border-none">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">PnL Estimado</span>
-                                        <Shield size={16} className="text-blue-400" />
-                                    </div>
-                                    <div className={`text-3xl font-black ${Number(currentPnL) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        R$ {currentPnL}
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 mt-2 italic">*Valores aproximados para o vencimento.</p>
-                                </Card>
-                            </div>
-
-                            <div className="lg:col-span-2">
-                                <Card className="p-4 h-[450px]">
-                                    <div className="mb-4 flex items-center gap-2 font-bold text-slate-700">
-                                        <TrendingUp size={20} className="text-emerald-600" /> Gráfico de Payoff
-                                    </div>
-                                    <ResponsiveContainer width="100%" height="90%">
-                                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                            <XAxis dataKey="price" hide={false} />
-                                            <YAxis />
-                                            <Tooltip 
-                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                                formatter={(value) => [`R$ ${value}`, 'PnL']}
-                                            />
-                                            <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
-                                            <ReferenceLine x={stockPrice} stroke="#3b82f6" strokeDasharray="5 5" />
-                                            <Line type="monotone" dataKey="pnl" stroke="#6366f1" strokeWidth={4} dot={false} animationDuration={500} />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </Card>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            // Interface construída sem usar as tags < > que causam erro
+            return e('div', { className: 'min-h-screen p-8 font-sans' }, 
+                e('div', { className: 'max-w-4xl mx-auto' },
+                    e('header', { className: 'mb-8 text-center' },
+                        e('h1', { className: 'text-3xl font-bold text-slate-900' }, 'Simulador da Mônada'),
+                        e('p', { className: 'text-slate-500' }, 'Alimentador Over Strip')
+                    ),
+                    e('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-6' },
+                        e('div', { className: 'bg-white p-6 rounded-xl shadow border border-slate-200' },
+                            e('label', { className: 'block text-xs font-bold mb-2' }, `PREÇO DA AÇÃO: R$ ${stockPrice}`),
+                            e('input', { type: 'range', min: 15, max: 30, step: 0.1, value: stockPrice, onChange: x => setStockPrice(Number(x.target.value)), className: 'w-full mb-6' }),
+                            e('label', { className: 'block text-xs font-bold mb-2' }, `ROLAGENS: ${weeksRolled}`),
+                            e('input', { type: 'range', min: 0, max: 52, value: weeksRolled, onChange: x => setWeeksRolled(Number(x.target.value)), className: 'w-full' }),
+                            e('div', { className: 'mt-6 p-4 bg-slate-900 rounded-lg text-white' },
+                                e('p', { className: 'text-[10px] text-slate-400' }, 'PnL ESTIMADO'),
+                                e('p', { className: 'text-2xl font-bold' }, `R$ ${currentPnL}`)
+                            )
+                        ),
+                        e('div', { className: 'md:col-span-2 bg-white p-4 rounded-xl shadow border border-slate-200 h-96' },
+                            e(ResponsiveContainer, { width: '100%', height: '100%' },
+                                e(LineChart, { data: chartData },
+                                    e(CartesianGrid, { strokeDasharray: '3 3' }),
+                                    e(XAxis, { dataKey: 'price' }),
+                                    e(YAxis),
+                                    e(Tooltip),
+                                    e(ReferenceLine, { y: 0, stroke: '#000', strokeWidth: 2 }),
+                                    e(ReferenceLine, { x: stockPrice, stroke: 'red', strokeDasharray: '3 3' }),
+                                    e(Line, { type: 'monotone', dataKey: 'pnl', stroke: '#4f46e5', strokeWidth: 4, dot: false })
+                                )
+                            )
+                        )
+                    )
+                )
             );
         };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        createRoot(document.getElementById('root')).render(e(App));
     </script>
 </body>
 </html>
