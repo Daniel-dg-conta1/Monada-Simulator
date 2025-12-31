@@ -5,141 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador da Mônada</title>
     
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom": "https://esm.sh/react-dom@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "recharts": "https://esm.sh/recharts@2.12.7",
-        "lucide-react": "https://esm.sh/lucide-react@0.378.0"
-      }
-    }
-    </script>
+
+    <style>
+        body { background-color: #f8fafc; }
+        .recharts-responsive-container { min-height: 300px; }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body>
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-        import { Info, TrendingUp, Shield, DollarSign, AlertTriangle, BookOpen, Activity, Youtube } from 'lucide-react';
+    <script type="text/babel">
+        // Extraindo componentes das bibliotecas globais
+        const { useState, useMemo } = React;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = Recharts;
 
+        // Componentes de UI
         const Card = ({ children, className = "" }) => (
-          <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${className}`}>
-            {children}
-          </div>
-        );
-
-        const SectionTitle = ({ icon: Icon, title }) => (
-          <div className="flex items-center gap-2 mb-4 text-blue-800 border-b pb-2 border-blue-100">
-            <Icon className="w-6 h-6" />
-            <h2 className="text-xl font-bold">{title}</h2>
-          </div>
+            <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${className}`}>
+                {children}
+            </div>
         );
 
         const App = () => {
-          const [activeTab, setActiveTab] = useState('concept');
-          const [stockPrice, setStockPrice] = useState(22.00);
-          const [longPutStrike, setLongPutStrike] = useState(22.00);
-          const [shortCallStrike, setShortCallStrike] = useState(21.50);
-          const [longCallStrike, setLongCallStrike] = useState(23.00);
-          const [initialCost, setInitialCost] = useState(3.00);
-          const [rollCredit, setRollCredit] = useState(0.20);
-          const [weeksRolled, setWeeksRolled] = useState(0);
+            const [activeTab, setActiveTab] = useState('simulator');
+            const [stockPrice, setStockPrice] = useState(22.00);
+            const [longPutStrike, setLongPutStrike] = useState(22.00);
+            const [shortCallStrike, setShortCallStrike] = useState(21.50);
+            const [longCallStrike, setLongCallStrike] = useState(23.00);
+            const [initialCost, setInitialCost] = useState(3.00);
+            const [rollCredit, setRollCredit] = useState(0.20);
+            const [weeksRolled, setWeeksRolled] = useState(0);
 
-          const chartData = useMemo(() => {
-            const data = [];
-            const minRange = Math.min(longPutStrike, shortCallStrike) * 0.7;
-            const maxRange = Math.max(longCallStrike, shortCallStrike) * 1.3;
-            const steps = 50;
-            const stepSize = (maxRange - minRange) / steps;
-            const accumulatedCredit = rollCredit * weeksRolled;
-            const totalCost = initialCost - accumulatedCredit;
+            const chartData = useMemo(() => {
+                const data = [];
+                const accumulatedCredit = rollCredit * weeksRolled;
+                const totalCost = initialCost - accumulatedCredit;
 
-            for (let i = 0; i <= steps; i++) {
-              const price = minRange + (i * stepSize);
-              const longPutValue = Math.max(longPutStrike - price, 0);
-              const longCallValue = Math.max(price - longCallStrike, 0);
-              const shortCallValue = 2 * Math.max(price - shortCallStrike, 0);
-              const structureValue = longPutValue + longCallValue - shortCallValue;
-              const pnl = structureValue - totalCost;
+                for (let price = 15; price <= 30; price += 0.5) {
+                    const longPutValue = Math.max(longPutStrike - price, 0);
+                    const longCallValue = Math.max(price - longCallStrike, 0);
+                    const shortCallValue = 2 * Math.max(price - shortCallStrike, 0);
+                    const pnl = (longPutValue + longCallValue - shortCallValue) - totalCost;
 
-              data.push({
-                price: parseFloat(price.toFixed(2)),
-                pnl: parseFloat(pnl.toFixed(2))
-              });
-            }
-            return data;
-          }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
+                    data.push({
+                        price: price,
+                        pnl: parseFloat(pnl.toFixed(2))
+                    });
+                }
+                return data;
+            }, [longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
 
-          const currentPnL = useMemo(() => {
-              const totalCost = initialCost - (rollCredit * weeksRolled);
-              const longPutValue = Math.max(longPutStrike - stockPrice, 0);
-              const longCallValue = Math.max(stockPrice - longCallStrike, 0);
-              const shortCallValue = 2 * Math.max(stockPrice - shortCallStrike, 0);
-              return (longPutValue + longCallValue - shortCallValue - totalCost).toFixed(2);
-          }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
+            const currentPnL = useMemo(() => {
+                const totalCost = initialCost - (rollCredit * weeksRolled);
+                const longPutValue = Math.max(longPutStrike - stockPrice, 0);
+                const longCallValue = Math.max(stockPrice - longCallStrike, 0);
+                const shortCallValue = 2 * Math.max(stockPrice - shortCallStrike, 0);
+                return (longPutValue + longCallValue - shortCallValue - totalCost).toFixed(2);
+            }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
 
-          return (
-            <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-              <div className="max-w-6xl mx-auto">
-                <header className="mb-8 text-center">
-                  <h1 className="text-4xl font-extrabold text-blue-900">Simulador da Mônada</h1>
-                  <p className="text-gray-600">Baseado no Mestre dos Derivativos</p>
-                </header>
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <header className="mb-8 text-center">
+                            <h1 className="text-3xl font-bold text-blue-900">Simulador da Mônada</h1>
+                            <p className="text-slate-500">Alimentador Over Strip Long Put Long Call</p>
+                        </header>
 
-                <div className="flex justify-center mb-6 gap-2">
-                  <button onClick={() => setActiveTab('concept')} className={`px-4 py-2 rounded ${activeTab === 'concept' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Conceitos</button>
-                  <button onClick={() => setActiveTab('simulator')} className={`px-4 py-2 rounded ${activeTab === 'simulator' ? 'bg-emerald-600 text-white' : 'bg-white'}`}>Simulador</button>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className="p-4 md:col-span-1 space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2">PREÇO DA AÇÃO: R$ {stockPrice}</label>
+                                    <input type="range" min="15" max="30" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-purple-600 mb-2">ROLAGENS FEITAS: {weeksRolled}</label>
+                                    <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full" />
+                                </div>
+                                <div className="p-4 bg-blue-50 rounded-lg">
+                                    <p className="text-xs text-blue-600 font-bold">RESULTADO ESTIMADO</p>
+                                    <p className={`text-2xl font-black ${currentPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>R$ {currentPnL}</p>
+                                </div>
+                            </Card>
+
+                            <Card className="p-4 md:col-span-2 h-96">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={chartData}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="price" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <ReferenceLine y={0} stroke="#000" strokeWidth={2} />
+                                        <ReferenceLine x={stockPrice} stroke="red" strokeDasharray="3 3" />
+                                        <Line type="monotone" dataKey="pnl" stroke="#4f46e5" strokeWidth={4} dot={false} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </Card>
+                        </div>
+                    </div>
                 </div>
-
-                {activeTab === 'concept' ? (
-                  <Card className="p-6">
-                    <SectionTitle icon={BookOpen} title="O que é a Mônada?" />
-                    <p>É uma estrutura de opções para longo prazo focada em rolagens constantes.</p>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="space-y-4">
-                      <Card className="p-4">
-                        <label className="text-xs font-bold">PREÇO AÇÃO: R$ {stockPrice}</label>
-                        <input type="range" min="10" max="40" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full" />
-                        <label className="text-xs font-bold block mt-4">ROLAGENS: {weeksRolled}</label>
-                        <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full" />
-                      </Card>
-                      <Card className="p-4 bg-blue-900 text-white">
-                        <p className="text-xs">PnL ESTIMADO</p>
-                        <p className="text-2xl font-bold">R$ {currentPnL}</p>
-                      </Card>
-                    </div>
-                    <div className="lg:col-span-2">
-                      <Card className="p-4 h-[400px]">
-                        <ResponsiveContainer>
-                          <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="price" type="number" domain={['auto', 'auto']} />
-                            <YAxis />
-                            <Tooltip />
-                            <ReferenceLine y={0} stroke="#000" />
-                            <Line type="monotone" dataKey="pnl" stroke="#8b5cf6" strokeWidth={3} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </Card>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+            );
         };
 
-        const root = createRoot(document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
