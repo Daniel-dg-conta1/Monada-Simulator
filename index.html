@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador da Mônada - PerfilCNC</title>
+    <title>Simulador da Mônada</title>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -22,13 +24,12 @@
 <body class="bg-gray-50">
     <div id="root"></div>
 
-    <script type="module">
+    <script type="text/babel" data-type="module">
         import React, { useState, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
         import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
         import { Info, TrendingUp, Shield, DollarSign, AlertTriangle, BookOpen, Activity, Youtube } from 'lucide-react';
 
-        // O SEU CÓDIGO REACT COMEÇA AQUI
         const Card = ({ children, className = "" }) => (
           <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${className}`}>
             {children}
@@ -71,17 +72,14 @@
 
               data.push({
                 price: parseFloat(price.toFixed(2)),
-                pnl: parseFloat(pnl.toFixed(2)),
-                structureValue: parseFloat(structureValue.toFixed(2)),
-                zeroLine: 0
+                pnl: parseFloat(pnl.toFixed(2))
               });
             }
             return data;
           }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
 
           const currentPnL = useMemo(() => {
-              const accumulatedCredit = rollCredit * weeksRolled;
-              const totalCost = initialCost - accumulatedCredit;
+              const totalCost = initialCost - (rollCredit * weeksRolled);
               const longPutValue = Math.max(longPutStrike - stockPrice, 0);
               const longCallValue = Math.max(stockPrice - longCallStrike, 0);
               const shortCallValue = 2 * Math.max(stockPrice - shortCallStrike, 0);
@@ -89,51 +87,47 @@
           }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
 
           return (
-            <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8">
+            <div className="min-h-screen bg-gray-50 p-4 md:p-8">
               <div className="max-w-6xl mx-auto">
                 <header className="mb-8 text-center">
-                  <h1 className="text-4xl font-extrabold text-blue-900 mb-2">Simulador da Mônada</h1>
-                  <p className="text-gray-600 text-lg">Estrutura Alimentador Over Strip Long Put Long Call</p>
+                  <h1 className="text-4xl font-extrabold text-blue-900">Simulador da Mônada</h1>
+                  <p className="text-gray-600">Baseado no Mestre dos Derivativos</p>
                 </header>
 
-                <div className="flex justify-center mb-6">
-                  <div className="bg-white p-1 rounded-lg shadow-sm border border-gray-200 inline-flex">
-                    <button onClick={() => setActiveTab('concept')} className={`px-6 py-2 rounded-md font-medium ${activeTab === 'concept' ? 'bg-blue-600 text-white' : 'text-gray-600'}`}>Conceitos</button>
-                    <button onClick={() => setActiveTab('simulator')} className={`px-6 py-2 rounded-md font-medium ${activeTab === 'simulator' ? 'bg-emerald-600 text-white' : 'text-gray-600'}`}>Simulador</button>
-                  </div>
+                <div className="flex justify-center mb-6 gap-2">
+                  <button onClick={() => setActiveTab('concept')} className={`px-4 py-2 rounded ${activeTab === 'concept' ? 'bg-blue-600 text-white' : 'bg-white'}`}>Conceitos</button>
+                  <button onClick={() => setActiveTab('simulator')} className={`px-4 py-2 rounded ${activeTab === 'simulator' ? 'bg-emerald-600 text-white' : 'bg-white'}`}>Simulador</button>
                 </div>
 
                 {activeTab === 'concept' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="p-6 md:col-span-2">
-                      <SectionTitle icon={Youtube} title="Vídeo Base: Mestre dos Derivativos" />
-                      <a href="https://www.youtube.com/watch?v=-YVI-P8WP1I" target="_blank" className="text-blue-600 underline">Assista ao vídeo original</a>
-                    </Card>
-                    <Card className="p-6"><SectionTitle icon={Shield} title="A Estrutura" /><p>Proteção com Put longa e financiamento com rolagens.</p></Card>
-                  </div>
+                  <Card className="p-6">
+                    <SectionTitle icon={BookOpen} title="O que é a Mônada?" />
+                    <p>É uma estrutura de opções para longo prazo focada em rolagens constantes.</p>
+                  </Card>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1 space-y-4">
-                        <Card className="p-4">
-                            <label className="block text-xs font-bold mb-1">PREÇO ATUAL DA AÇÃO</label>
-                            <input type="number" value={stockPrice} onChange={(e) => setStockPrice(Number(e.target.value))} className="w-full border p-2 rounded" />
-                        </Card>
-                        <Card className="p-4">
-                            <label className="block text-xs font-bold mb-1 text-purple-700">ROLAGENS ({weeksRolled})</label>
-                            <input type="range" min="0" max="52" value={weeksRolled} onChange={(e) => setWeeksRolled(Number(e.target.value))} className="w-full" />
-                        </Card>
+                    <div className="space-y-4">
+                      <Card className="p-4">
+                        <label className="text-xs font-bold">PREÇO AÇÃO: R$ {stockPrice}</label>
+                        <input type="range" min="10" max="40" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full" />
+                        <label className="text-xs font-bold block mt-4">ROLAGENS: {weeksRolled}</label>
+                        <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full" />
+                      </Card>
+                      <Card className="p-4 bg-blue-900 text-white">
+                        <p className="text-xs">PnL ESTIMADO</p>
+                        <p className="text-2xl font-bold">R$ {currentPnL}</p>
+                      </Card>
                     </div>
                     <div className="lg:col-span-2">
                       <Card className="p-4 h-[400px]">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer>
                           <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="price" type="number" domain={['auto', 'auto']} />
                             <YAxis />
                             <Tooltip />
-                            <Legend />
                             <ReferenceLine y={0} stroke="#000" />
-                            <Line type="monotone" dataKey="pnl" stroke="#8b5cf6" strokeWidth={3} name="Resultado (R$)" dot={false} />
+                            <Line type="monotone" dataKey="pnl" stroke="#8b5cf6" strokeWidth={3} dot={false} />
                           </LineChart>
                         </ResponsiveContainer>
                       </Card>
@@ -146,7 +140,7 @@
         };
 
         const root = createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        root.render(<App />);
     </script>
 </body>
 </html>
