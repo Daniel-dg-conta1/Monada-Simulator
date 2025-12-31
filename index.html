@@ -5,42 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador da Mônada</title>
     
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <style>
-        body { background-color: #f8fafc; }
-        .recharts-responsive-container { min-height: 300px; }
-    </style>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+        "lucide-react": "https://esm.sh/lucide-react@0.378.0"
+      }
+    }
+    </script>
 </head>
-<body>
+<body class="bg-slate-50">
     <div id="root"></div>
 
-    <script type="text/babel">
-        // Extraindo componentes das bibliotecas globais
-        const { useState, useMemo } = React;
-        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = Recharts;
+    <script type="module">
+        import React, { useState, useMemo } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+        import { Activity, TrendingUp, Shield } from 'lucide-react';
 
-        // Componentes de UI
         const Card = ({ children, className = "" }) => (
-            <div className={`bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${className}`}>
+            <div className={`bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden ${className}`}>
                 {children}
             </div>
         );
 
         const App = () => {
-            const [activeTab, setActiveTab] = useState('simulator');
             const [stockPrice, setStockPrice] = useState(22.00);
-            const [longPutStrike, setLongPutStrike] = useState(22.00);
-            const [shortCallStrike, setShortCallStrike] = useState(21.50);
-            const [longCallStrike, setLongCallStrike] = useState(23.00);
-            const [initialCost, setInitialCost] = useState(3.00);
-            const [rollCredit, setRollCredit] = useState(0.20);
             const [weeksRolled, setWeeksRolled] = useState(0);
+            
+            // Strike fixos baseados no vídeo do Mestre
+            const longPutStrike = 22.00;
+            const shortCallStrike = 21.50;
+            const longCallStrike = 23.00;
+            const initialCost = 3.00;
+            const rollCredit = 0.20;
 
             const chartData = useMemo(() => {
                 const data = [];
@@ -59,7 +62,7 @@
                     });
                 }
                 return data;
-            }, [longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
+            }, [weeksRolled]);
 
             const currentPnL = useMemo(() => {
                 const totalCost = initialCost - (rollCredit * weeksRolled);
@@ -67,53 +70,75 @@
                 const longCallValue = Math.max(stockPrice - longCallStrike, 0);
                 const shortCallValue = 2 * Math.max(stockPrice - shortCallStrike, 0);
                 return (longPutValue + longCallValue - shortCallValue - totalCost).toFixed(2);
-            }, [stockPrice, longPutStrike, shortCallStrike, longCallStrike, initialCost, rollCredit, weeksRolled]);
+            }, [stockPrice, weeksRolled]);
 
             return (
-                <div className="min-h-screen p-4 md:p-8">
-                    <div className="max-w-4xl mx-auto">
+                <div className="min-h-screen p-4 md:p-8 font-sans">
+                    <div className="max-w-5xl mx-auto">
                         <header className="mb-8 text-center">
-                            <h1 className="text-3xl font-bold text-blue-900">Simulador da Mônada</h1>
+                            <h1 className="text-3xl font-extrabold text-slate-900">Simulador da Mônada</h1>
                             <p className="text-slate-500">Alimentador Over Strip Long Put Long Call</p>
                         </header>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <Card className="p-4 md:col-span-1 space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 mb-2">PREÇO DA AÇÃO: R$ {stockPrice}</label>
-                                    <input type="range" min="15" max="30" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-purple-600 mb-2">ROLAGENS FEITAS: {weeksRolled}</label>
-                                    <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full" />
-                                </div>
-                                <div className="p-4 bg-blue-50 rounded-lg">
-                                    <p className="text-xs text-blue-600 font-bold">RESULTADO ESTIMADO</p>
-                                    <p className={`text-2xl font-black ${currentPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>R$ {currentPnL}</p>
-                                </div>
-                            </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="space-y-6">
+                                <Card className="p-6">
+                                    <h2 className="flex items-center gap-2 font-bold text-slate-800 mb-4">
+                                        <Activity className="text-blue-600" size={20} /> Parâmetros
+                                    </h2>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Preço da Ação: R$ {stockPrice.toFixed(2)}</label>
+                                            <input type="range" min="15" max="30" step="0.1" value={stockPrice} onChange={e => setStockPrice(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Rolagens (Semanas): {weeksRolled}</label>
+                                            <input type="range" min="0" max="52" value={weeksRolled} onChange={e => setWeeksRolled(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600" />
+                                        </div>
+                                    </div>
+                                </Card>
 
-                            <Card className="p-4 md:col-span-2 h-96">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="price" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <ReferenceLine y={0} stroke="#000" strokeWidth={2} />
-                                        <ReferenceLine x={stockPrice} stroke="red" strokeDasharray="3 3" />
-                                        <Line type="monotone" dataKey="pnl" stroke="#4f46e5" strokeWidth={4} dot={false} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </Card>
+                                <Card className="p-6 bg-slate-900 text-white border-none">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-bold text-slate-400 uppercase">PnL Estimado</span>
+                                        <Shield size={16} className="text-blue-400" />
+                                    </div>
+                                    <div className={`text-3xl font-black ${Number(currentPnL) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        R$ {currentPnL}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 mt-2 italic">*Valores aproximados para o vencimento.</p>
+                                </Card>
+                            </div>
+
+                            <div className="lg:col-span-2">
+                                <Card className="p-4 h-[450px]">
+                                    <div className="mb-4 flex items-center gap-2 font-bold text-slate-700">
+                                        <TrendingUp size={20} className="text-emerald-600" /> Gráfico de Payoff
+                                    </div>
+                                    <ResponsiveContainer width="100%" height="90%">
+                                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="price" hide={false} />
+                                            <YAxis />
+                                            <Tooltip 
+                                                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                                formatter={(value) => [`R$ ${value}`, 'PnL']}
+                                            />
+                                            <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={2} />
+                                            <ReferenceLine x={stockPrice} stroke="#3b82f6" strokeDasharray="5 5" />
+                                            <Line type="monotone" dataKey="pnl" stroke="#6366f1" strokeWidth={4} dot={false} animationDuration={500} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </Card>
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const root = createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
     </script>
 </body>
 </html>
